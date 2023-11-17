@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 app = Flask(__name__)
-model = tf.keras.models.load_model('./vgg_spill_detect_model.keras')
+model = tf.keras.models.load_model('./vgg_spill_detect_model.h5')
 
 def preprocess_image(image_path):
     img = Image.open(image_path)
