@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Classifier</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        text-align: center;
+        margin: 20px;
+        background-color: #f4f4f4;
+      }
+
+      h1 {
+        color: #333;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      label {
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        transition: background-color 0.3s;
+        margin: 10px;
+      }
+
+      label:hover {
+        background-color: #45a049;
+      }
+
+      button {
+        background-color: #3498db;
+        color: white;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin: 10px;
+      }
+
+      button:hover {
+        background-color: #2980b9;
+      }
+
+      #selectedImage {
+        width: 600px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+
+      #result,
+      #result2 {
+        font-size: 18px;
+        font-weight: bold;
+        color: #0066cc;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Spill Classifier</h1>
+    <input type="file" id="fileInput" accept="image/*" onchange="displayImage()" />
+    <label for="fileInput">Select Image</label>
+    <button onclick="captureFromWebcam()">Capture from Webcam</button>
+    <button onclick="predict()">Predict</button>
+    <div id="result"></div>
+    <div id="result2"></div>
+    <img id="selectedImage" src="" alt="Selected Image" style="max-width: 100%" />
+
+    <script>
+      function displayImage() {
+        var input = document.getElementById("fileInput");
+        var file = input.files[0];
+
+        if (file) {
+          var reader = new FileReader();
+
+          reader.onload = function (e) {
+            var imgElement = document.getElementById("selectedImage");
+            imgElement.src = e.target.result;
+          };
+
+          reader.readAsDataURL(file);
+        }
+      }
+
+      function captureFromWebcam() {
+        var constraints = { video: true };
+
+        navigator.mediaDevices
+          .getUserMedia(constraints)
+          .then(function (stream) {
+            var video = document.createElement("video");
+            document.body.appendChild(video);
+
+            video.srcObject = stream;
+            video.play();
+
+            video.addEventListener("loadeddata", function () {
+              var canvas = document.createElement("canvas");
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              var context = canvas.getContext("2d");
+
+              context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+              var imgElement = document.getElementById("selectedImage");
+              imgElement.src = canvas.toDataURL("image/png");
+
+              // Stop the video stream
+              stream.getTracks().forEach((track) => track.stop());
+
+              // Remove the video element
+              document.body.removeChild(video);
+
+              // Predict immediately after capturing from webcam
+              predict();
+            });
+          })
+          .catch(function (error) {
+            console.error("Error accessing webcam:", error);
+          });
+      }
+
+      function predict() {
+        var input = document.getElementById("fileInput");
+        var file = input.files[0];
+
+        // Use either the selected file or the webcam-captured image
+        var imgElement = document.getElementById("selectedImage");
+        var imgDataUrl = imgElement.src;
+
+        if (!file && !imgDataUrl) {
+          console.error("No image selected or captured.");
+          return;
+        }
+
+        var formData = new FormData();
+        formData.append("file", file || dataURLtoFile(imgDataUrl));
+
+        fetch("/predict", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            var resultDiv = document.getElementById("result");
+            var resultDiv2 = document.getElementById("result2");
+            resultDiv.innerHTML = "Prediction: " + data.prediction;
+            resultDiv2.innerHTML = data.prediction < 0.5 ? "No Spill" : "Spill";
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      // Convert data URL to a File object
+      function dataURLtoFile(dataURL) {
+        var arr = dataURL.split(",");
+        var mime = arr[0].match(/:(.*?);/)[1];
+        var bstr = atob(arr[1]);
+        var n = bstr.length;
+        var u8arr = new Uint8Array(n);
+
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+
+        return new File([u8arr], "webcam_capture.png", { type: mime });
+      }
+    </script>
+  </body>
+</html>
