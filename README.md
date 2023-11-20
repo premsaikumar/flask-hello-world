@@ -19,3 +19,4 @@ python app.py
 - The model is based on a vgg(imagenet) backbone and dense final layer.
 - On receiving an input image, it predicts/classifies whether an oil spill occured or not.
 - We have created a website using `flask` to demostrate/use the model.
+- You can test on the images contianed in `test_images` folder, which are **not used as training/testing/validation** data for the model.
