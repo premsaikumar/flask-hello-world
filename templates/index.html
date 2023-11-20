@@ -111,19 +111,11 @@
               canvas.width = video.videoWidth;
               canvas.height = video.videoHeight;
               var context = canvas.getContext("2d");
-
               context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
               var imgElement = document.getElementById("selectedImage");
               imgElement.src = canvas.toDataURL("image/png");
-
-              // Stop the video stream
               stream.getTracks().forEach((track) => track.stop());
-
-              // Remove the video element
               document.body.removeChild(video);
-
-              // Predict immediately after capturing from webcam
               predict();
             });
           })
@@ -135,19 +127,14 @@
       function predict() {
         var input = document.getElementById("fileInput");
         var file = input.files[0];
-
-        // Use either the selected file or the webcam-captured image
         var imgElement = document.getElementById("selectedImage");
         var imgDataUrl = imgElement.src;
-
         if (!file && !imgDataUrl) {
           console.error("No image selected or captured.");
           return;
         }
-
         var formData = new FormData();
         formData.append("file", file || dataURLtoFile(imgDataUrl));
-
         fetch("/predict", {
           method: "POST",
           body: formData,
@@ -164,7 +151,6 @@
           });
       }
 
-      // Convert data URL to a File object
       function dataURLtoFile(dataURL) {
         var arr = dataURL.split(",");
         var mime = arr[0].match(/:(.*?);/)[1];
